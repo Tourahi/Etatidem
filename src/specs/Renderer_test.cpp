@@ -1,5 +1,5 @@
-//
-// Created by mimir on 25/09/25.
-//
+#include "../lib/utest.h"
 
-#include "Renderer_test.h"
+UTEST(Optional, DefaultConstructor) {
+    ASSERT_EQ(0, 0);
+}

@@ -27,8 +27,8 @@ namespace Renderer {
         clip.bottom = rect.y + rect.h;
     }
 
-    void init(SDL_Window* win) {
-        assert(window);
+    void init(SDL_Window *win) {
+        assert(win);
         window = win;
         SDL_Surface *surf = SDL_GetWindowSurface(window);
         setClipRect((Rect) {0, 0, surf->w, surf->h} );

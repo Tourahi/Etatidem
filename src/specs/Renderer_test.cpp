@@ -1,5 +1,9 @@
 #include "../lib/utest.h"
+#include "../Renderer.h"
 
-UTEST(Optional, DefaultConstructor) {
-    ASSERT_EQ(0, 0);
+UTEST(Renderer, InitSetsClipRect) {
+    SDL_Window *win = SDL_CreateWindow("Test", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, 0);
+    Renderer::init(win);
+
+    SDL_DestroyWindow(win);
 }

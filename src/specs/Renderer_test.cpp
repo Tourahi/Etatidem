@@ -1,5 +1,5 @@
 #include "../lib/utest.h"
-#include "../Renderer.h"
+#include "../Renderer.cpp"
 
 UTEST(Renderer, InitSetsClipRect) {
     SDL_Window *win = SDL_CreateWindow("Test", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, 0);
@@ -38,4 +38,14 @@ UTEST(Utf8ToCodePointTest, HandlesFourByte) {
     const char *next = Renderer::utf8toCodePoint("\xf0\x9f\x98\x80", &cp); // 😀
     EXPECT_EQ(cp, 0x1F600);
     EXPECT_EQ(*next, '\0');
+}
+
+UTEST(RendererTest, NewImageCreatesValidImage) {
+    int width = 10, height = 20;
+    Renderer::Image* img = Renderer::newImage(width, height);
+    ASSERT_NE(img, nullptr);
+    ASSERT_NE(img->pixels, nullptr);
+    ASSERT_EQ(img->w, width);
+    ASSERT_EQ(img->h, height);
+    delete img;
 }

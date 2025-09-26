@@ -6,8 +6,8 @@
 
 namespace Renderer {
 
-    typedef struct Image;
-    typedef struct Font;
+    typedef struct Image Image;
+    typedef struct Font Font;
 
     typedef struct { uint8_t b, g, r, a; } Color;
     typedef struct {int x, y, w, h; } Rect;
@@ -16,6 +16,10 @@ namespace Renderer {
     void setClipRect(Rect rect);
     void getClipRect(Rect *rect);
 
+    void updateRects(Rect *rects, int count);
+    void getSize(int *x, int *y);
+    Image* newImage(int width, int height);
+    void freeImage(Image *image);
 
     // Helpers
     const char* utf8toCodePoint(const char *c, unsigned *dst);

@@ -32,10 +32,6 @@ namespace Renderer {
         int height;
     };
 
-    struct Font {
-
-    };
-
     // Helpers ------------------------------------------------
 
     static void* checkAlloc(void* ptr) {
@@ -85,7 +81,34 @@ namespace Renderer {
         rect->h = clip.bottom - clip.top;
     }
 
+    void updateRects(Rect *rects, int count) {
+        SDL_UpdateWindowSurfaceRects(window, (SDL_Rect*) rects, count);
+        static bool initialFrame = true;
+        if (initialFrame) {
+            SDL_ShowWindow(window); // Show window on first frame
+            initialFrame = false;
+        }
+    }
 
+    void getSize(int *x, int *y) {
+        SDL_Surface *surf = SDL_GetWindowSurface(window);
+        *x = surf->w;
+        *y = surf->h;
+    }
 
+    Image* newImage(int width, int height) {
+        assert(width > 0 && height > 0);
+        Image *image = static_cast<Image *>(malloc(sizeof(Image) + width * height * sizeof(Color)));
+        checkAlloc(image);
+        image->pixels = reinterpret_cast<Color *>(image + 1);
+        image->w = width;
+        image->h = height;
+        return image;
+    }
 
+    void freeImage(Image *image) {
+        free(image);
+    }
+
+    
 }

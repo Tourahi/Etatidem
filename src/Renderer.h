@@ -14,6 +14,11 @@ namespace Renderer {
 
     void init(SDL_Window* win);
     void setClipRect(Rect rect);
+    void getClipRect(Rect *rect);
+
+
+    // Helpers
+    const char* utf8toCodePoint(const char *c, unsigned *dst);
 
 }
 

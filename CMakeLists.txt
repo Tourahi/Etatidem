@@ -9,6 +9,8 @@ add_library(rendrer STATIC
     src/Renderer.cpp
     src/Renderer.h
     src/config.h
+    src/lib/stb/stb_truetype.h
+    src/lib/stb/stb_truetype.c
 )
 
 add_executable(Etatidem src/main.cpp)

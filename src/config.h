@@ -7,6 +7,7 @@
 
 
 #	define ENABLE_UTEST
+#	define EYEWITNESS_SCALED_ASCENT_OFFSET 5 // TBD: 2.5 better ?
 
 
 

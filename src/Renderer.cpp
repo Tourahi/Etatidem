@@ -4,6 +4,8 @@
 #include <math.h>
 #include "lib/stb/stb_truetype.h"
 #include "Renderer.h"
+
+#include "config.h"
 #include "lib/aixlog.hpp"
 
 
@@ -110,5 +112,50 @@ namespace Renderer {
         free(image);
     }
 
-    
+    static GlyphSet* loadGlyphSet(Font *font, int idx) {
+        GlyphSet *set = static_cast<GlyphSet *>(checkAlloc(calloc(1, sizeof(GlyphSet))));
+
+        // Init image
+        int width = 128;
+        int height = 128;
+    retry:
+        set->image = newImage(width, height);
+
+        // load glyphs
+        float s =  stbtt_ScaleForMappingEmToPixels(&font->stbfont, 1) /
+                stbtt_ScaleForPixelHeight(&font->stbfont, 1); // for constant scaling
+        int res = stbtt_BakeFontBitmap(
+            static_cast<const unsigned char *>(font->data), 0, font->size * s,
+            reinterpret_cast<unsigned char *>(set->image->pixels),
+            width, height, idx * 256, 256, set->glyphs);
+
+        // retry each time with a larger image size
+        if (res < 0) {
+            width *= 2;
+            height *= 2;
+            freeImage(set->image);
+            goto retry; // HERESY
+        }
+
+        // adjust glyph yoffsets and xadvance
+        int ascent, decent, linegap;
+        stbtt_GetFontVMetrics(&font->stbfont, &ascent, &decent, &linegap);
+        float scale = stbtt_ScaleForMappingEmToPixels(&font->stbfont, font->size);
+        int scaled_ascent = ascent * scale + EYEWITNESS_SCALED_ASCENT_OFFSET;
+        for (int i = 0; i < 256; i++) {
+            set->glyphs[i].yoff += scaled_ascent;
+            set->glyphs[i].xadvance = floor(set->glyphs[i].xadvance);
+        }
+
+        // convert 8Bits data to 32Bits RGBA
+        for (int i = width * height - 1; i >= 0; i--) {
+            uint8_t n = *(reinterpret_cast<uint8_t *>(set->image->pixels) + i);
+            set->image->pixels[i] = (Color) { .b = 255, .g = 255, .r = 255, .a = n };
+        }
+
+        return set;
+    }
+
+
+
 }

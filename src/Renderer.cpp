@@ -36,6 +36,12 @@ namespace Renderer {
 
     // Helpers ------------------------------------------------
 
+    static void logInfo(const std::string msg) {
+#ifdef ENABLE_DEBUG_INFO
+        LOG(INFO) << AixLog::Color::blue  << msg << "\n";
+#endif
+    }
+
     static void* checkAlloc(void* ptr) {
         if (!ptr) {
             LOG(WARNING) << AixLog::Color::red << "Fatal error: [checkAlloc] memory allocation failed\n";
@@ -175,6 +181,7 @@ namespace Renderer {
         // load font into buffer
         fp = fopen(filename, "rb");
         if (!fp) { return nullptr; }
+        logInfo("Font loaded: " + std::string(filename));
 
         // get size
         fseek(fp, 0, SEEK_END);
@@ -210,6 +217,43 @@ namespace Renderer {
         return font;
     }
 
+    void freeFont(Font *font) {
+        for (int i = 0; i < MAX_GLYPHSET; i++) {
+            GlyphSet *set = font->sets[i];
+            if (set) {
+                freeImage(set->image);
+                free(set);
+            }
+        }
+        free(font->data);
+        free(font);
+    }
 
+    void setFontTabWidth(Font *font, int n) {
+        GlyphSet *set = getGlyphSet(font, '\t');
+        set->glyphs['\t'].xadvance = n;
+    }
 
+    int getFontTabWidth(Font *font) {
+        GlyphSet *set = getGlyphSet(font, '\t');
+        return set->glyphs['\t'].xadvance;
+    }
+
+    int getFontWidth(Font *font, const char *text) {
+        int x = 0;
+        const char *p = text;
+        unsigned codepoint;
+        while (*p) {
+            p = utf8toCodePoint(p, &codepoint);
+            GlyphSet *set = getGlyphSet(font, codepoint);
+            stbtt_bakedchar *g = &set->glyphs[codepoint & 0xff]; // [codepoint & 0xff] insures index in [0,255]
+            x += g->xadvance;
+        }
+        return x;
+    }
+
+    int getFontHeight(Font *font) {
+        return font->height;
+    }
+    
 }

@@ -23,6 +23,13 @@ namespace Renderer {
 
     // font
     Font* loadFont(const char *filename, float size);
+    void freeFont(Font *font);
+    void setFontTabWidth(Font *font, int n);
+    int getFontTabWidth(Font *font);
+    int getFontWidth(Font *font, const char *text);
+    int getFontHeight(Font *font);
+
+
 
     // Helpers
     const char* utf8toCodePoint(const char *c, unsigned *dst);

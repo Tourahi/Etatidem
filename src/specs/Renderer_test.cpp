@@ -1,6 +1,9 @@
 #include "../lib/utest.h"
 #include "../Renderer.cpp"
 
+// std
+#include <filesystem>
+
 UTEST(Renderer, InitSetsClipRect) {
     SDL_Window *win = SDL_CreateWindow("Test", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, 0);
     Renderer::init(win);
@@ -48,4 +51,18 @@ UTEST(RendererTest, NewImageCreatesValidImage) {
     ASSERT_EQ(img->w, width);
     ASSERT_EQ(img->h, height);
     delete img;
+}
+
+UTEST(RendererTest, LoadGlyphSetReturnsValidGlyphSetWithValidFont) {
+    std::filesystem::path cwd = std::filesystem::current_path();
+    Renderer::Font* font = Renderer::loadFont(cwd.parent_path().append("src/specs/assets/font.ttf").c_str(), 16.0f);
+    stbtt_InitFont(&font->stbfont, static_cast<const unsigned char*>(font->data), 1);
+
+    Renderer::GlyphSet* set = Renderer::loadGlyphSet(font, 1);
+    ASSERT_NE(set, nullptr);
+    ASSERT_NE(set->image, nullptr);
+
+    Renderer::freeImage(set->image);
+    free(set);
+    free(font->data);
 }

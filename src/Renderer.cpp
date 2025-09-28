@@ -138,8 +138,8 @@ namespace Renderer {
         }
 
         // adjust glyph yoffsets and xadvance
-        int ascent, decent, linegap;
-        stbtt_GetFontVMetrics(&font->stbfont, &ascent, &decent, &linegap);
+        int ascent, descent, linegap;
+        stbtt_GetFontVMetrics(&font->stbfont, &ascent, &descent, &linegap);
         float scale = stbtt_ScaleForMappingEmToPixels(&font->stbfont, font->size);
         int scaled_ascent = ascent * scale + EYEWITNESS_SCALED_ASCENT_OFFSET;
         for (int i = 0; i < 256; i++) {
@@ -154,6 +154,60 @@ namespace Renderer {
         }
 
         return set;
+    }
+
+    static GlyphSet* getGlyphSet(Font *font, int codepoint) {
+        int idx = (codepoint >> 8) % MAX_GLYPHSET; // divide by 256
+        if (!font->sets[idx]) {
+            font->sets[idx] = loadGlyphSet(font, idx);
+        }
+        return font->sets[idx];
+    }
+
+    Font* loadFont(const char *filename, float size) {
+        Font *font = nullptr;
+        FILE *fp = nullptr;
+
+        // init font
+        font = static_cast<Font*>(checkAlloc(calloc(1, sizeof(Font))));
+        font->size = size;
+
+        // load font into buffer
+        fp = fopen(filename, "rb");
+        if (!fp) { return nullptr; }
+
+        // get size
+        fseek(fp, 0, SEEK_END);
+        int bufSize = ftell(fp);
+        fseek(fp, 0, SEEK_SET);
+
+        // load
+        font->data = checkAlloc(malloc(bufSize));
+        int _ = fread(font->data, 1, bufSize, fp); (void) _;
+        fclose(fp);
+        fp = nullptr;
+
+        // init stbfont
+        int ok = stbtt_InitFont(&font->stbfont, static_cast<const unsigned char *>(font->data), 0);
+        if (!ok) {
+            if (fp) { fclose(fp); }
+            if (font) { free(font->data); }
+            free(font);
+            return nullptr;
+        }
+
+        // get height and scale
+        int ascent, descent, linegap;
+        stbtt_GetFontVMetrics(&font->stbfont, &ascent, &descent, &linegap);
+        float scale = stbtt_ScaleForMappingEmToPixels(&font->stbfont, font->size);
+        font->height = (ascent - descent + linegap) * scale + EYEWITNESS_SCALED_ASCENT_OFFSET;
+
+        // make tab and newline glyphs invisible
+        stbtt_bakedchar *g = getGlyphSet(font, '\n')->glyphs;
+        g['\t'].x1 = g['\t'].x0;
+        g['\n'].x1 = g['\n'].x0;
+
+        return font;
     }
 
 

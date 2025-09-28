@@ -21,6 +21,9 @@ namespace Renderer {
     Image* newImage(int width, int height);
     void freeImage(Image *image);
 
+    // font
+    Font* loadFont(const char *filename, float size);
+
     // Helpers
     const char* utf8toCodePoint(const char *c, unsigned *dst);
 

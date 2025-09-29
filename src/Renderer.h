@@ -29,6 +29,12 @@ namespace Renderer {
     int getFontWidth(Font *font, const char *text);
     int getFontHeight(Font *font);
 
+    // drawing
+    void drawRect(Rect rect, Color color);
+    void drawImage(Image *image, Rect *sub, int x, int y, Color color);
+    int drawText(Font *font, const char *text, int x, int y, Color color);
+
+
 
 
     // Helpers

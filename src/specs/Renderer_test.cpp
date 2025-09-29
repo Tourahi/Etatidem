@@ -66,3 +66,15 @@ UTEST(RendererTest, LoadGlyphSetReturnsValidGlyphSetWithValidFont) {
     free(set);
     free(font->data);
 }
+
+UTEST(ColorTest, blendPixel) {
+    Renderer::Color dst = {255, 0, 0, 255}; // Red, opaque
+    Renderer::Color src = {0, 255, 0, 128}; // Green, half-transparent
+
+    Renderer::Color result = blendPixel(dst, src);
+
+    // Expected: blend of red and green, half alpha
+    assert(result.r >= 127 && result.r <= 128); // Should be about half red
+    assert(result.g >= 127 && result.g <= 128); // Should be about half green
+    assert(result.b == 0); // No blue
+}

@@ -255,5 +255,106 @@ namespace Renderer {
     int getFontHeight(Font *font) {
         return font->height;
     }
-    
+
+    static Color blendPixel(Color dst, Color src) {
+        int ia = 0xff - src.a;
+        dst.r = ((src.r * src.a) + (dst.r * ia)) >> 8;
+        dst.g = ((src.g * src.a) + (dst.g * ia)) >> 8;
+        dst.b = ((src.b * src.a) + (dst.b * ia)) >> 8;
+        return dst;
+    }
+
+    static Color blendPixel2(Color dst, Color src, Color color) {
+        src.a = (src.a * color.a) >> 8;
+        int ia = 0xff - src.a;
+        dst.r = ((src.r * color.r * src.a) >> 16) + ((dst.r * ia) >> 8);
+        dst.g = ((src.g * color.g * src.a) >> 16) + ((dst.g * ia) >> 8);
+        dst.b = ((src.b * color.b * src.a) >> 16) + ((dst.b * ia) >> 8);
+        return dst;
+    }
+
+#define rect_draw_loop(expr)            \
+    for (int j = y1; j < y2; j++) {     \
+        for (int i = x1; i < x2; i++) { \
+            *d = expr;                  \
+            d++;                        \
+        }                               \
+        d += dr;                        \
+    }
+
+    void drawRect(Rect rect, Color color) {
+        if (color.a == 0) { return; }
+
+        int x1 = rect.x < clip.left ? clip.left : rect.x; // clipped x
+        int y1 = rect.y < clip.top  ? clip.top  : rect.y; // clipped y
+        int x2 = rect.x + rect.w;
+        int y2 = rect.y + rect.h;
+        x2 = x2 > clip.right  ? clip.right  : x2;
+        y2 = y2 > clip.bottom ? clip.bottom : y2;
+
+        SDL_Surface *surf = SDL_GetWindowSurface(window);
+        Color *d = static_cast<Color*>(surf->pixels);
+        d += x1 + y1 * surf->w; // move to (x1, y1)
+        int dr = surf->w - (x2 - x1); // delta row
+
+        if (color.a == 0xff) {
+            rect_draw_loop(color);
+        } else {
+            rect_draw_loop(blendPixel(*d, color));
+        }
+    }
+
+    void drawImage(Image *image, Rect *sub, int x, int y, Color color) {
+        if (color.a == 0) { return; }
+
+        // clip
+        int n;
+        if ((n = clip.left - x) > 0) { sub->w  -= n; sub->x += n; x += n; }
+        if ((n = clip.top  - y) > 0) { sub->h -= n; sub->y += n; y += n; }
+        if ((n = x + sub->w  - clip.right ) > 0) { sub->w  -= n; }
+        if ((n = y + sub->h - clip.bottom) > 0) { sub->h -= n; }
+
+        if (sub->w <= 0 || sub->h <= 0) {
+            return;
+        }
+
+        // Draw
+        SDL_Surface *surf = SDL_GetWindowSurface(window);
+        Color *s = image->pixels;
+        Color *d = (Color*) surf->pixels;
+        s += sub->x + sub->y * image->w;
+        d += x + y * surf->w;
+        int sr = image->w - sub->w;
+        int dr = surf->w - sub->w;
+
+        for (int j = 0; j < sub->h; j++) {
+            for (int i = 0; i < sub->w; i++) {
+                *d = blendPixel2(*d, *s, color);
+                d++;
+                s++;
+            }
+            d += dr;
+            s += sr;
+        }
+    }
+
+    int drawText(Font *font, const char *text, int x, int y, Color color) {
+        Rect rect;
+        const char *p = text;
+        unsigned codepoint;
+        while (*p) {
+            p = utf8toCodePoint(p, &codepoint);
+            GlyphSet *set = getGlyphSet(font, codepoint);
+            stbtt_bakedchar *g = &set->glyphs[codepoint & 0xff];
+            rect.x = g->x0;
+            rect.y = g->y0;
+            rect.w = g->x1 - g->x0;
+            rect.h = g->y1 - g->y0;
+            drawImage(set->image, &rect, x + g->xoff, y + g->yoff, color);
+            x += g->xadvance;
+        }
+        return x;
+    }
+
+
 }

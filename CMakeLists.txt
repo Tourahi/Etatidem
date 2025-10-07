@@ -13,6 +13,13 @@ add_library(rendrer STATIC
     src/lib/stb/stb_truetype.c
 )
 
+add_library(modules STATIC
+    #[[ threadPool ]]
+    src/modules/threadPool/work.h
+    src/modules/threadPool/pool.h
+    src/modules/threadPool/pool.cpp
+)
+
 add_executable(Etatidem src/main.cpp)
 
 target_include_directories(Etatidem PRIVATE ${SDL2_INCLUDE_DIRS})
@@ -29,7 +36,7 @@ add_executable(tests
     src/specs/Tests_main.cpp
 )
 target_include_directories(tests PRIVATE ${SDL2_INCLUDE_DIRS})
-target_link_libraries(tests PRIVATE ${SDL2_LIBRARIES} rendrer)
+target_link_libraries(tests PRIVATE ${SDL2_LIBRARIES} rendrer modules)
 
 
 enable_testing()

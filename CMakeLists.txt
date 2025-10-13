@@ -15,9 +15,9 @@ add_library(rendrer STATIC
 
 add_library(modules STATIC
     #[[ threadPool ]]
-    src/modules/threadPool/work.h
-    src/modules/threadPool/pool.h
-    src/modules/threadPool/pool.cpp
+    src/modules/threadPool/Task.h
+    src/modules/threadPool/Pool.h
+    src/modules/threadPool/Pool.cpp
 )
 
 add_executable(Etatidem src/main.cpp)

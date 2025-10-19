@@ -109,19 +109,19 @@ static bool nextCommand(Command **prev) {
     return *prev != reinterpret_cast<Command *>(State::get().commandBuffer + State::get().commandBufferIdx);
 }
 
-void showDebug(const bool enable) {
+void Renderer::Cache::showDebug(const bool enable) {
     State::get().showDebug = enable;
 }
 
-void freeFont(Renderer::Font *font) {
+void Renderer::Cache::freeFont(Font *font) {
     if (Command *cmd = pushCommand(FREE_FONT)) { cmd->font = font; }
 }
 
-void setClipRect(const Renderer::Rect rect) {
+void Renderer::Cache::setClipRect(const Rect rect) {
     if (Command *cmd = pushCommand(SET_CLIP)) { cmd->rect = intersect(rect, State::get().screenRect); }
 }
 
-void drawRect(const Renderer::Rect rect, const Renderer::Color color) {
+void Renderer::Cache::drawRect(const Rect rect, const Color color) {
     if (!rectsOverlap(State::get().screenRect, rect)) { return; }
     if (Command *cmd = pushCommand(DRAW_RECT)) {
         cmd->rect = rect;
@@ -129,12 +129,12 @@ void drawRect(const Renderer::Rect rect, const Renderer::Color color) {
     }
 }
 
-int drawText(Renderer::Font *font, const char *text, int x, int y, Renderer::Color color) {
-    Renderer::Rect rect;
+int Renderer::Cache::drawText(Font *font, const char *text, const int x, const int y, Color color) {
+    Rect rect;
     rect.x = x;
     rect.y = y;
-    rect.w = Renderer::getFontWidth(font, text);
-    rect.h = Renderer::getFontHeight(font);
+    rect.w = getFontWidth(font, text);
+    rect.h = getFontHeight(font);
 
     if (rectsOverlap(State::get().screenRect, rect)) {
         const int sz = static_cast<int>(strlen(text) + 1);
@@ -150,5 +150,51 @@ int drawText(Renderer::Font *font, const char *text, int x, int y, Renderer::Col
 
     return x + rect.w;
 }
+
+void Renderer::Cache::invalidate() {
+    memset(State::get().cellsPrev, 0xff, sizeof(State::get().cellsBuffer1));
+}
+
+void Renderer::Cache::beginFrame() {
+    int w, h;
+    getSize(&w, &h);
+    if (State::get().screenRect.w != w || State::get().screenRect.h != h) {
+        State::get().screenRect.w = w;
+        State::get().screenRect.h = h;
+        invalidate();
+    }
+}
+
+static void pushRect(Renderer::Rect r, int *count) {
+    for (int i = *count; i > 0; i--) {
+        if (Renderer::Rect *rp = &State::get().rectBuffer[i]; rectsOverlap(*rp, r)) {
+            *rp = mergeRects(*rp, r);
+            return;
+        }
+    }
+    State::get().rectBuffer[(*count)++] = r;
+}
+
+static void updateOverlappingCells(const Renderer::Rect r, const unsigned h) {
+    const int x1 = r.x / CELL_SIZE;
+    const int y1 = r.y / CELL_SIZE;
+    const int x2 = (r.x + r.w) / CELL_SIZE;
+    const int y2 = (r.y + r.h) / CELL_SIZE;
+
+    for (int y = y1; y <= y2; y++) {
+        for (int x = x1; x <= x2; x++) {
+            const int idx = cellIdx(x, y);
+            hash(&State::get().cells[idx], &h, sizeof(h));
+        }
+    }
+}
+
+
+
+
+
+
+
+
 
 

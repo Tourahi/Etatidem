@@ -1,6 +1,3 @@
-//
-// Created by mimir on 10/16/25.
-//
 
 #ifndef ETATIDEM_RENCACHE_H
 #define ETATIDEM_RENCACHE_H

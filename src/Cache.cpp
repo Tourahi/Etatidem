@@ -113,15 +113,15 @@ void Renderer::Cache::showDebug(const bool enable) {
     State::get().showDebug = enable;
 }
 
-void Renderer::Cache::freeFont(Font *font) {
+void Renderer::Cache::freeFontCmd(Font *font) {
     if (Command *cmd = pushCommand(FREE_FONT)) { cmd->font = font; }
 }
 
-void Renderer::Cache::setClipRect(const Rect rect) {
+void Renderer::Cache::setClipRectCmd(const Rect rect) {
     if (Command *cmd = pushCommand(SET_CLIP)) { cmd->rect = intersect(rect, State::get().screenRect); }
 }
 
-void Renderer::Cache::drawRect(const Rect rect, const Color color) {
+void Renderer::Cache::drawRectCmd(const Rect rect, const Color color) {
     if (!rectsOverlap(State::get().screenRect, rect)) { return; }
     if (Command *cmd = pushCommand(DRAW_RECT)) {
         cmd->rect = rect;
@@ -129,7 +129,7 @@ void Renderer::Cache::drawRect(const Rect rect, const Color color) {
     }
 }
 
-int Renderer::Cache::drawText(Font *font, const char *text, const int x, const int y, Color color) {
+int Renderer::Cache::drawTextCmd(Font *font, const char *text, const int x, const int y, Color color) {
     Rect rect;
     rect.x = x;
     rect.y = y;
@@ -191,6 +191,92 @@ static void updateOverlappingCells(const Renderer::Rect r, const unsigned h) {
 
 
 
+void Renderer::Cache::endFrame() {
+    // update cells from commands
+    Command *cmd = nullptr;
+    Rect cr = State::get().screenRect;
+    while (nextCommand(&cmd)) {
+        if (cmd->type == SET_CLIP) { cr = cmd->rect; }
+        Rect r = intersect(cmd->rect, cr);
+        if (r.w == 0 || r.h == 0) { continue; }
+        unsigned h = HASH_INIT;
+        hash(&h, cmd, cmd->size);
+        updateOverlappingCells(r, h);
+    }
+
+    // push rects for all cells changed from last frame, reset cells
+    int rectCount = 0;
+    int maxX = State::get().screenRect.w / CELL_SIZE + 1;
+    int maxY = State::get().screenRect.h / CELL_SIZE + 1;
+    for (int y = 0; y < maxY; y++) {
+        for (int x = 0; x < maxX; x++) {
+            // compare previous and current cell
+            const int idx = cellIdx(x, y);
+            if (State::get().cells[idx] != State::get().cellsPrev[idx]) {
+                pushRect({x, y, 1, 1}, &rectCount);
+            }
+            State::get().cellsPrev[idx] = HASH_INIT;
+        }
+    }
+
+    // expand rects from cells to pixels
+    for (int i = 0; i < rectCount; i++) {
+        Rect *r = &State::get().rectBuffer[i];
+        r->x *= CELL_SIZE;
+        r->y *= CELL_SIZE;
+        r->w *= CELL_SIZE;
+        r->h *= CELL_SIZE;
+        *r = intersect(*r, State::get().screenRect);
+    }
+
+    // redraw updated regions
+    bool hasFreeCommands = false;
+    for (int i = 0; i < rectCount; i++) {
+        // draw
+        Rect r = State::get().rectBuffer[i];
+        setClipRectCmd(r);
+
+        cmd = nullptr;
+        while (nextCommand(&cmd)) {
+            switch (cmd->type) {
+                case FREE_FONT:
+                    hasFreeCommands = true;
+                    break;
+                case SET_CLIP:
+                    setClipRect(intersect(cmd->rect, r));
+                    break;
+                case DRAW_RECT:
+                    drawRect(cmd->rect, cmd->color);
+                    break;
+                case DRAW_TEXT:
+                    setFontTabWidth(cmd->font, cmd->tabWidth);
+                    drawText(cmd->font, cmd->text, cmd->rect.x, cmd->rect.y, cmd->color);
+                    break;
+            }
+        }
+    }
+
+    // update dirty rects
+    if (rectCount > 0) {
+        updateRects(State::get().rectBuffer.data(), rectCount);
+    }
+
+    // free fonts
+    if (hasFreeCommands) {
+        cmd = nullptr;
+        while (nextCommand(&cmd)) {
+            if (cmd->type == FREE_FONT) {
+                freeFont(cmd->font);
+            }
+        }
+    }
+
+    // swap cell buffer and reset
+    unsigned *tmp = State::get().cells;
+    State::get().cells = State::get().cellsPrev;
+    State::get().cellsPrev = tmp;
+    State::get().commandBufferIdx = 0;
+}
 
 
 

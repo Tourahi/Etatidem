@@ -7,10 +7,10 @@
 namespace Renderer::Cache {
 
     void showDebug(bool enable);
-    void freeFont(Font *font);
-    void setClipRect(Rect rect);
-    void drawRect(Rect rect, Color color);
-    int drawText(Font *font, const char *text, int x, int y, Color color);
+    void freeFontCmd(Font *font);
+    void setClipRectCmd(Rect rect);
+    void drawRectCmd(Rect rect, Color color);
+    int drawTextCmd(Font *font, const char *text, int x, int y, Color color);
     void invalidate();
     void beginFrame();
     void endFrame();

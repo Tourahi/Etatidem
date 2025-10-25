@@ -13,6 +13,9 @@ add_library(renderer STATIC
     src/lib/stb/stb_truetype.c
     src/Cache.cpp
     src/Cache.h
+        src/api/api.cpp
+        src/api/api.h
+        src/api/System.cpp
 )
 
 add_library(modules STATIC
